@@ -142,10 +142,9 @@ def registerEvents(): Unit =
     }
   }
 
-def onLoad(ev: Event): Unit = {
+def onLoad(ev: Event): Unit =
   replaceTagWithTemplate()
   registerEvents()
-}
 
 def shareToDefaultInstance(): Unit =
   val instanceOrigin = defaultInstance
@@ -160,11 +159,10 @@ def shareToDefaultInstance(): Unit =
       )
 
 def defaultInstance: Option[String] =
-  dom.window.localStorage.hasOwnProperty(LOCAL_STORAGE_KEY_FOR_INSTANCE) match {
+  dom.window.localStorage.hasOwnProperty(LOCAL_STORAGE_KEY_FOR_INSTANCE) match
     case true =>
       Some(dom.window.localStorage.getItem(LOCAL_STORAGE_KEY_FOR_INSTANCE))
     case false => None
-  }
 
 def resolveInstance(userId: String): Future[Unit] =
   // webfinger
