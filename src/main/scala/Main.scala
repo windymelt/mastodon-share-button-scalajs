@@ -198,9 +198,12 @@ def setDefaultInstance(instance: String): Unit =
   dom.window.localStorage.setItem(LOCAL_STORAGE_KEY_FOR_INSTANCE, instance)
 
 def shareText: String =
+  val title =
+    Option(document.querySelector("head title")).map(_.innerText).getOrElse("")
   textTemplate
     .toString()
     .replaceAllLiterally("{}", dom.window.location.toString())
+    .replaceAllLiterally("{title}", title)
 
 def shareUrl(origin: String, text: String): String =
   sttp.model.Uri(URI(s"$origin/share")).addParam("text", text).toString
