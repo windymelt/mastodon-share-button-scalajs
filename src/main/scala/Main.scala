@@ -57,7 +57,7 @@ val templateDOM = """
 </style>
 <div class="js-mstdn-share-button-container">
   <a href="#" class="js-mstdn-share mstdn-share-button">
-    <img class="mstdn-share-button-logo" src="./logo-white.svg" alt="Mastodon">
+    <img class="mstdn-share-button-logo" src="https://raw.githubusercontent.com/windymelt/mastodon-share-button-scalajs/main/logo-white.svg" alt="Mastodon">
     <span class="mstdn-share-button-text"></span>
   </a>
   <div class="js-mstdn-share-popup mstdn-share-popup hidden">
