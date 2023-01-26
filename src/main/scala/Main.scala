@@ -76,8 +76,7 @@ val templateDOM = """
 @main def hello: Unit =
   document.addEventListener("DOMContentLoaded", onLoad _)
 
-def onLoad(ev: Event): Unit = {
-  // extract template
+def replaceTagWithTemplate(): Unit =
   val templateNode = document.createElement("TEMPLATE")
   templateNode.innerHTML = templateDOM
   templateNode.classList.add("js-mstdn-share-button-template")
@@ -91,6 +90,7 @@ def onLoad(ev: Event): Unit = {
     elem.outerHTML = template.innerHTML
   }
 
+def registerEvents(): Unit =
   val shareContainer =
     document.querySelectorAll(".js-mstdn-share-button-container")
 
@@ -141,6 +141,10 @@ def onLoad(ev: Event): Unit = {
       false
     }
   }
+
+def onLoad(ev: Event): Unit = {
+  replaceTagWithTemplate()
+  registerEvents()
 }
 
 def shareToDefaultInstance(): Unit =
@@ -153,7 +157,7 @@ def shareToDefaultInstance(): Unit =
       dom.window.open(
         shareUrl(value, shareText),
         "_blank"
-      ) // TODO: paramEncoding
+      )
 
 def defaultInstance: Option[String] =
   dom.window.localStorage.hasOwnProperty(LOCAL_STORAGE_KEY_FOR_INSTANCE) match {
@@ -197,7 +201,6 @@ def resolveInstance(userId: String): Future[Unit] =
         setDefaultInstance(origin)
       case Some(value) => throw new Exception(s"match failure: $value")
       case None        => throw new Exception("JSON pointing failure")
-
   }
 
 def setDefaultInstance(instance: String): Unit =
