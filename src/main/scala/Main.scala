@@ -15,22 +15,23 @@ var hovering = false
 
 val templateDOM = """
 <style>
-  .mstdn-share-button {
-    border-radius: 5px;
+  a.mstdn-share-button {
+    border-radius: 3px;
     background-color: #6364FF;
     color: white;
-    padding: 10px;
+    padding: 5px;
     margin: 10px;
     text-decoration: none;
     font-weight: 600;
     display: inline-block;
+    height: 14px;
+    min-width: 14px;
   }
-  .mstdn-share-button-logo {
-    height: 24px;
-    vertical-align: middle;
+  img.mstdn-share-button-logo {
+    height: 14px;
   }
-  .mstdn-share-button-text::after {
-    content: "Share";
+  span.mstdn-share-button-text {
+    
   }
   .mstdn-share-popup {
     border-radius: 5px;
@@ -58,7 +59,7 @@ val templateDOM = """
 <div class="js-mstdn-share-button-container">
   <a href="#" class="js-mstdn-share mstdn-share-button">
     <img class="mstdn-share-button-logo" src="https://raw.githubusercontent.com/windymelt/mastodon-share-button-scalajs/main/logo-white.svg" alt="Mastodon">
-    <span class="mstdn-share-button-text"></span>
+    <span class="js-mstdn-share-button-text mstdn-share-button-text">Share</span>
   </a>
   <div class="js-mstdn-share-popup mstdn-share-popup hidden">
     <form>
