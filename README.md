@@ -1,8 +1,33 @@
-## sbt project compiled with Scala 3
+## Simple Mastodon Share Button
 
-### Usage
+![](./preview.png)
 
-This is a normal sbt project. You can compile code with `sbt compile`, run it with `sbt run`, and `sbt console` will start a Scala 3 REPL.
+### How to use
 
-For more information on the sbt-dotty plugin, see the
-[scala3-example-project](https://github.com/scala/scala3-example-project/blob/main/README.md).
+Paste this code into your HTML:
+
+```html
+<a href="#" class="js-mstdn-share-button"></a>
+<script src="https://github.com/windymelt/mastodon-share-button-scalajs/releases/download/v0.0.5/mstdn-share.js"></script>
+```
+
+Latest version is ![](https://img.shields.io/github/v/release/windymelt/mastodon-share-button-scalajs?display_name=tag)
+
+### Template String
+
+You can use template string for share text:
+
+```html
+<a href="#" class="js-mstdn-share-button">Share: {title} {}</a>
+```
+
+Currently following placeholders are available:
+
+- `{}` -- for URL
+- `{title}` -- for inner text of `title` element
+
+### Build
+
+Use `sbt fastLinkJS` for development build.
+
+Use `sbt fullLinkJS` for release build.
