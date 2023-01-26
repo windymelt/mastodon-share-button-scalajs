@@ -1,5 +1,7 @@
 ## Simple Mastodon Share Button
 
+[日本語README](./README%20-ja_JP.md)
+
 ![](./preview.png)
 
 ### How to use
