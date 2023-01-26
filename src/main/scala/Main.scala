@@ -8,6 +8,7 @@ import org.scalajs.dom.HTMLAnchorElement
 import java.net.URI
 import org.scalajs.dom.Node
 import org.scalajs.dom.Element
+import org.scalajs.dom.HTMLFormElement
 
 val LOCAL_STORAGE_KEY_FOR_INSTANCE = "windymelt-mstdn-share-button-instance"
 var textTemplate = "{}"
@@ -133,7 +134,12 @@ def onLoad(ev: Event): Unit = {
     )
     shareButton.addEventListener("mouseleave", _ => hovering = false)
 
-    // TODO: long mouseover to show popup
+    e.querySelector("form").asInstanceOf[HTMLFormElement].onsubmit = _ => {
+      resolveInstance(instanceInput.value).andThen(_ =>
+        shareToDefaultInstance()
+      )
+      false
+    }
   }
 }
 
