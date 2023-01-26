@@ -1,4 +1,5 @@
 val scala3Version = "3.2.1"
+val circeVersion = "0.14.1"
 
 lazy val root = project
   .in(file("."))
@@ -7,8 +8,13 @@ lazy val root = project
     version := "0.1.0-SNAPSHOT",
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "2.1.0"
+      "org.scala-js" %%% "scalajs-dom" % "2.1.0",
+      "com.softwaremill.sttp.client3" %%% "core" % "3.8.8"
     ),
+    libraryDependencies ++= Seq(
+      "io.circe" %%% "circe-scalajs",
+      "io.circe" %%% "circe-parser"
+    ).map(_ % circeVersion),
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test
   )
   .enablePlugins(ScalaJSPlugin)

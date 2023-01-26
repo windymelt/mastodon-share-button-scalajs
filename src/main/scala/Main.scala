@@ -1,5 +1,207 @@
-@main def hello: Unit = 
-  println("Hello world!")
-  println(msg)
+import org.scalajs.dom
+import org.scalajs.dom.document
+import concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import org.scalajs.dom.HTMLInputElement
+import org.scalajs.dom.Event
+import org.scalajs.dom.HTMLAnchorElement
+import java.net.URI
+import org.scalajs.dom.Node
+import org.scalajs.dom.Element
 
-def msg = "I was compiled by Scala 3. :)"
+val LOCAL_STORAGE_KEY_FOR_INSTANCE = "windymelt-mstdn-share-button-instance"
+var textTemplate = "{}"
+var hovering = false
+
+val templateDOM = """
+<style>
+  .mstdn-share-button {
+    border-radius: 5px;
+    background-color: #6364FF;
+    color: white;
+    padding: 10px;
+    margin: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-block;
+  }
+  .mstdn-share-button-logo {
+    height: 24px;
+    vertical-align: middle;
+  }
+  .mstdn-share-button-text::after {
+    content: "Share";
+  }
+  .mstdn-share-popup {
+    border-radius: 5px;
+    background-color: #2F0C7A;
+    color: white;
+    width: min-content;
+    padding: 10px;
+    margin: 10px;
+    position: fixed;
+  }
+  .mstdn-share-instance-save-button {
+    border-radius: 5px;
+    background-color: #6364FF;
+    color: white;
+    border: none;
+    padding: 5px;
+    margin: 5px;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .hidden {
+    display: none;
+  }
+</style>
+<div class="js-mstdn-share-button-container">
+  <a href="#" class="js-mstdn-share mstdn-share-button">
+    <img class="mstdn-share-button-logo" src="./logo-white.svg" alt="Mastodon">
+    <span class="mstdn-share-button-text"></span>
+  </a>
+  <div class="js-mstdn-share-popup mstdn-share-popup hidden">
+    <form>
+    <label for="mstdn-instance-origin">Mastodon ID?</label>
+    <!-- https://github.com/mastodon/mastodon/blob/69378eac99c013a0db7d2d5ff9a54dfcc287d9ce/app/models/account.rb#L64 -->
+    <input class="js-mstdn-instance-origin" name="mstdn-instance-origin" type="text" size="30" pattern="@[a-z0-9_]+([a-z0-9_\.-]+[a-z0-9_]+)?@.*" value="" placeholder="@username@pawoo.net" />
+    <a href="#" class="js-mstdn-share-button-save mstdn-share-instance-save-button" type="button">Save and share</a>
+  </form>
+  </div>
+</div>
+"""
+
+@main def hello: Unit =
+  document.addEventListener("DOMContentLoaded", onLoad _)
+
+def onLoad(ev: Event): Unit = {
+  // extract template
+  val templateNode = document.createElement("TEMPLATE")
+  templateNode.innerHTML = templateDOM
+  templateNode.classList.add("js-mstdn-share-button-template")
+  document.body.appendChild(templateNode)
+  val template = document.querySelector(".js-mstdn-share-button-template")
+  val target = document.querySelectorAll(".js-mstdn-share-button")
+  target.foreach { elem =>
+    if (!elem.innerText.isEmpty()) {
+      textTemplate = elem.innerText
+    }
+    elem.outerHTML = template.innerHTML
+  }
+
+  val shareContainer =
+    document.querySelectorAll(".js-mstdn-share-button-container")
+
+  shareContainer.foreach { e =>
+    val instanceSaveButton = e.querySelector(".js-mstdn-share-button-save")
+    val instanceInput: HTMLInputElement = e
+      .querySelector(".js-mstdn-instance-origin")
+      .asInstanceOf[HTMLInputElement]
+
+    instanceSaveButton.addEventListener(
+      "click",
+      (ev) => {
+        resolveInstance(instanceInput.value).andThen(_ =>
+          shareToDefaultInstance()
+        )
+      }
+    )
+
+    val shareButton: HTMLAnchorElement =
+      e.querySelector(".js-mstdn-share").asInstanceOf[HTMLAnchorElement]
+
+    defaultInstance match
+      case None => // nop
+      case Some(value) =>
+        shareButton.href = shareUrl(value, shareText)
+        shareButton.target = "_blank"
+
+    shareButton.addEventListener("click", _ => shareToDefaultInstance())
+    shareButton.addEventListener(
+      "mouseover",
+      _ => {
+        hovering = true
+        dom.window.setTimeout(
+          hoverTimeout(() => {
+            val popup = document.querySelectorAll(".js-mstdn-share-popup")
+            popup.foreach(_.classList.remove("hidden"))
+          }),
+          1000
+        )
+      }
+    )
+    shareButton.addEventListener("mouseleave", _ => hovering = false)
+
+    // TODO: long mouseover to show popup
+  }
+}
+
+def shareToDefaultInstance(): Unit =
+  val instanceOrigin = defaultInstance
+  val popup = document.querySelectorAll(".js-mstdn-share-popup")
+
+  instanceOrigin match
+    case None => popup.foreach(_.classList.remove("hidden"))
+    case Some(value) =>
+      dom.window.open(
+        shareUrl(value, shareText),
+        "_blank"
+      ) // TODO: paramEncoding
+
+def defaultInstance: Option[String] =
+  dom.window.localStorage.hasOwnProperty(LOCAL_STORAGE_KEY_FOR_INSTANCE) match {
+    case true =>
+      Some(dom.window.localStorage.getItem(LOCAL_STORAGE_KEY_FOR_INSTANCE))
+    case false => None
+  }
+
+def resolveInstance(userId: String): Future[Unit] =
+  // webfinger
+  import sttp.client3._
+  val userIdWithoutAtSign = userId match
+    case s"@$id" => id
+    case _       => ???
+
+  val domainOfUserId = userIdWithoutAtSign match
+    case s"$name@$domain" => domain
+    case _                => ???
+
+  val request = basicRequest.get(
+    uri"https://$domainOfUserId/.well-known/webfinger?resource=acct:$userIdWithoutAtSign"
+  )
+  val backend = FetchBackend()
+  val response = request.send(backend)
+  response.map { res =>
+    import io.circe.syntax._
+    import io.circe.parser._
+    val parsedJson = res.body match
+      case Left(value)  => throw new Exception("body failure")
+      case Right(value) => parse(value)
+
+    val firstAlias = parsedJson match
+      case Left(value) => throw new Exception("JSON parsing failure")
+      case Right(value) =>
+        val aliases = (value \\ "aliases").head
+        aliases.asArray.flatMap(_.head.asString)
+
+    firstAlias match
+      case Some(s"$origin/@$user") =>
+        println(s"[Mastodon share button] detected $origin")
+        setDefaultInstance(origin)
+      case Some(value) => throw new Exception(s"match failure: $value")
+      case None        => throw new Exception("JSON pointing failure")
+
+  }
+
+def setDefaultInstance(instance: String): Unit =
+  dom.window.localStorage.setItem(LOCAL_STORAGE_KEY_FOR_INSTANCE, instance)
+
+def shareText: String =
+  textTemplate
+    .toString()
+    .replaceAllLiterally("{}", dom.window.location.toString())
+
+def shareUrl(origin: String, text: String): String =
+  sttp.model.Uri(URI(s"$origin/share")).addParam("text", text).toString
+
+def hoverTimeout(f: () => Unit): () => Unit = () => if (hovering) f()
