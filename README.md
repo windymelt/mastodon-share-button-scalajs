@@ -10,7 +10,7 @@ Paste this code into your HTML:
 
 ```html
 <a href="#" class="js-mstdn-share-button"></a>
-<script src="https://github.com/windymelt/mastodon-share-button-scalajs/releases/download/v0.0.6/mstdn-share.js"></script>
+<script async src="https://github.com/windymelt/mastodon-share-button-scalajs/releases/download/v0.0.6/mstdn-share.js"></script>
 ```
 
 Latest version is ![](https://img.shields.io/github/v/release/windymelt/mastodon-share-button-scalajs?display_name=tag)
