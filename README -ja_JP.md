@@ -8,7 +8,7 @@
 
 ```html
 <a href="#" class="js-mstdn-share-button"></a>
-<script async src="https://github.com/windymelt/mastodon-share-button-scalajs/releases/download/v0.0.6/mstdn-share.js"></script>
+<script defer src="https://github.com/windymelt/mastodon-share-button-scalajs/releases/download/v0.0.6/mstdn-share.js"></script>
 ```
 
 最新バージョンは ![](https://img.shields.io/github/v/release/windymelt/mastodon-share-button-scalajs?display_name=tag) です
