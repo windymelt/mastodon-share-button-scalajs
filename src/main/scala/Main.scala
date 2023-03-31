@@ -118,7 +118,13 @@ def registerEvents(): Unit =
         shareButton.href = shareUrl(value, shareText)
         shareButton.target = "_blank"
 
-    shareButton.addEventListener("click", _ => shareToDefaultInstance())
+    shareButton.addEventListener(
+      "click",
+      _ => {
+        shareToDefaultInstance()
+        false
+      }
+    )
     shareButton.addEventListener(
       "mouseover",
       _ => {
@@ -140,6 +146,9 @@ def registerEvents(): Unit =
       )
       false
     }
+
+    e.classList.remove("js-mstdn-share-button-container")
+    e.classList.add("js-mstdn-share-button-container-extracted")
   }
 
 def onLoad(ev: Event): Unit =
