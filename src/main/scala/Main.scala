@@ -91,10 +91,10 @@ def replaceTagWithTemplate(): Unit =
   }
 
 def registerEvents(): Unit =
-  val shareContainer =
+  val shareContainers =
     document.querySelectorAll(".js-mstdn-share-button-container")
 
-  shareContainer.foreach { e =>
+  shareContainers.foreach { e =>
     val instanceSaveButton = e.querySelector(".js-mstdn-share-button-save")
     val instanceInput: HTMLInputElement = e
       .querySelector(".js-mstdn-instance-origin")
@@ -103,7 +103,7 @@ def registerEvents(): Unit =
     instanceSaveButton.addEventListener(
       "click",
       (ev) => {
-        resolveInstance(instanceInput.value).andThen(_ =>
+        resolveAndSetAsDefaultInstanceHost(instanceInput.value).andThen(_ =>
           shareToDefaultInstance()
         )
       }
@@ -118,7 +118,13 @@ def registerEvents(): Unit =
         shareButton.href = shareUrl(value, shareText)
         shareButton.target = "_blank"
 
-    shareButton.addEventListener("click", _ => shareToDefaultInstance())
+    shareButton.addEventListener(
+      "click",
+      _ => {
+        shareToDefaultInstance()
+        false
+      }
+    )
     shareButton.addEventListener(
       "mouseover",
       _ => {
@@ -135,11 +141,14 @@ def registerEvents(): Unit =
     shareButton.addEventListener("mouseleave", _ => hovering = false)
 
     e.querySelector("form").asInstanceOf[HTMLFormElement].onsubmit = _ => {
-      resolveInstance(instanceInput.value).andThen(_ =>
+      resolveAndSetAsDefaultInstanceHost(instanceInput.value).andThen(_ =>
         shareToDefaultInstance()
       )
       false
     }
+
+    e.classList.remove("js-mstdn-share-button-container")
+    e.classList.add("js-mstdn-share-button-container-extracted")
   }
 
 def onLoad(ev: Event): Unit =
@@ -164,7 +173,7 @@ def defaultInstance: Option[String] =
       Some(dom.window.localStorage.getItem(LOCAL_STORAGE_KEY_FOR_INSTANCE))
     case false => None
 
-def resolveInstance(userId: String): Future[Unit] =
+def resolveAndSetAsDefaultInstanceHost(userId: String): Future[Unit] =
   // webfinger
   import sttp.client3._
   val userIdWithoutAtSign = userId match
