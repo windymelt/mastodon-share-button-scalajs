@@ -91,10 +91,10 @@ def replaceTagWithTemplate(): Unit =
   }
 
 def registerEvents(): Unit =
-  val shareContainer =
+  val shareContainers =
     document.querySelectorAll(".js-mstdn-share-button-container")
 
-  shareContainer.foreach { e =>
+  shareContainers.foreach { e =>
     val instanceSaveButton = e.querySelector(".js-mstdn-share-button-save")
     val instanceInput: HTMLInputElement = e
       .querySelector(".js-mstdn-instance-origin")
