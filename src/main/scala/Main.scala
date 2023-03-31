@@ -120,8 +120,9 @@ def registerEvents(): Unit =
 
     shareButton.addEventListener(
       "click",
-      _ => {
+      ev => {
         shareToDefaultInstance()
+        ev.stopPropagation()
         false
       }
     )
@@ -140,10 +141,11 @@ def registerEvents(): Unit =
     )
     shareButton.addEventListener("mouseleave", _ => hovering = false)
 
-    e.querySelector("form").asInstanceOf[HTMLFormElement].onsubmit = _ => {
+    e.querySelector("form").asInstanceOf[HTMLFormElement].onsubmit = ev => {
       resolveAndSetAsDefaultInstanceHost(instanceInput.value).andThen(_ =>
         shareToDefaultInstance()
       )
+      ev.stopPropagation()
       false
     }
 
