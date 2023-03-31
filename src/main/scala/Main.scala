@@ -119,14 +119,6 @@ def registerEvents(): Unit =
         shareButton.target = "_blank"
 
     shareButton.addEventListener(
-      "click",
-      ev => {
-        shareToDefaultInstance()
-        ev.stopPropagation()
-        false
-      }
-    )
-    shareButton.addEventListener(
       "mouseover",
       _ => {
         hovering = true
