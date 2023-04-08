@@ -55,6 +55,10 @@ val templateDOM = """
     text-decoration: none;
     display: inline-block;
   }
+  .mstdn-share-popup input {
+    background-color: white;
+    color: black;
+  }
   .hidden {
     display: none;
   }
