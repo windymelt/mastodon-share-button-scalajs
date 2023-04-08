@@ -44,6 +44,7 @@ val templateDOM = """
     padding: 10px;
     margin: 10px;
     position: fixed;
+    bottom: 10em;
   }
   .mstdn-share-instance-save-button {
     border-radius: 5px;
