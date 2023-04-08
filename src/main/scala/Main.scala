@@ -1,14 +1,16 @@
 import org.scalajs.dom
-import org.scalajs.dom.document
-import concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import org.scalajs.dom.HTMLInputElement
+import org.scalajs.dom.Element
 import org.scalajs.dom.Event
 import org.scalajs.dom.HTMLAnchorElement
-import java.net.URI
-import org.scalajs.dom.Node
-import org.scalajs.dom.Element
 import org.scalajs.dom.HTMLFormElement
+import org.scalajs.dom.HTMLInputElement
+import org.scalajs.dom.Node
+import org.scalajs.dom.document
+
+import java.net.URI
+import scala.concurrent.Future
+
+import concurrent.ExecutionContext.Implicits.global
 
 val LOCAL_STORAGE_KEY_FOR_INSTANCE = "windymelt-mstdn-share-button-instance"
 var textTemplate = "{}"
@@ -58,7 +60,7 @@ val templateDOM = """
   }
 </style>
 <div class="js-mstdn-share-button-container">
-  <a href="#" class="js-mstdn-share mstdn-share-button">
+  <a href="#" tabindex="-1" class="js-mstdn-share mstdn-share-button">
     <img class="mstdn-share-button-logo" src="https://raw.githubusercontent.com/windymelt/mastodon-share-button-scalajs/main/logo-white.svg" alt="Mastodon">
     <span class="js-mstdn-share-button-text mstdn-share-button-text">Share</span>
   </a>
@@ -67,6 +69,8 @@ val templateDOM = """
     <label for="mstdn-instance-origin">Mastodon ID?</label>
     <!-- https://github.com/mastodon/mastodon/blob/69378eac99c013a0db7d2d5ff9a54dfcc287d9ce/app/models/account.rb#L64 -->
     <input class="js-mstdn-instance-origin" name="mstdn-instance-origin" type="text" size="30" pattern="@[a-z0-9_]+([a-z0-9_\.-]+[a-z0-9_]+)?@.*" value="" placeholder="@username@pawoo.net" />
+    <div><small><i>To open this window, hover over the button.</i></small></div>
+    <div><small><i>ボタン上でマウスホバーするとこのウィンドウが開きます。</i></small></div>
     <a href="#" class="js-mstdn-share-button-save mstdn-share-instance-save-button" type="button">Save and share</a>
   </form>
   </div>
@@ -100,23 +104,31 @@ def registerEvents(): Unit =
       .querySelector(".js-mstdn-instance-origin")
       .asInstanceOf[HTMLInputElement]
 
+    val shareButton: HTMLAnchorElement =
+      e.querySelector(".js-mstdn-share").asInstanceOf[HTMLAnchorElement]
+
     instanceSaveButton.addEventListener(
       "click",
       (ev) => {
         resolveAndSetAsDefaultInstanceHost(instanceInput.value).andThen(_ =>
+          enableAnchor(shareButton)
           shareToDefaultInstance()
         )
       }
     )
 
-    val shareButton: HTMLAnchorElement =
-      e.querySelector(".js-mstdn-share").asInstanceOf[HTMLAnchorElement]
-
     defaultInstance match
-      case None => // nop
+      case None => // We can do nothing. We show configuration box
+        shareButton.addEventListener(
+          "click",
+          (_) =>
+            val popup = document.querySelectorAll(".js-mstdn-share-popup")
+            popup.foreach(_.classList.remove("hidden"))
+        )
       case Some(value) =>
         shareButton.href = shareUrl(value, shareText)
         shareButton.target = "_blank"
+        enableAnchor(shareButton)
 
     shareButton.addEventListener(
       "mouseover",
@@ -135,6 +147,7 @@ def registerEvents(): Unit =
 
     e.querySelector("form").asInstanceOf[HTMLFormElement].onsubmit = ev => {
       resolveAndSetAsDefaultInstanceHost(instanceInput.value).andThen(_ =>
+        enableAnchor(shareButton)
         shareToDefaultInstance()
       )
       ev.stopPropagation()
@@ -160,6 +173,10 @@ def shareToDefaultInstance(): Unit =
         shareUrl(value, shareText),
         "_blank"
       )
+
+def enableAnchor(e: HTMLAnchorElement): Unit = try {
+  e.attributes.removeNamedItem("tabindex")
+} catch { case _: Exception => }
 
 def defaultInstance: Option[String] =
   dom.window.localStorage.hasOwnProperty(LOCAL_STORAGE_KEY_FOR_INSTANCE) match
