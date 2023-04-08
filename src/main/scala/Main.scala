@@ -69,6 +69,8 @@ val templateDOM = """
     <label for="mstdn-instance-origin">Mastodon ID?</label>
     <!-- https://github.com/mastodon/mastodon/blob/69378eac99c013a0db7d2d5ff9a54dfcc287d9ce/app/models/account.rb#L64 -->
     <input class="js-mstdn-instance-origin" name="mstdn-instance-origin" type="text" size="30" pattern="@[a-z0-9_]+([a-z0-9_\.-]+[a-z0-9_]+)?@.*" value="" placeholder="@username@pawoo.net" />
+    <div><small><i>To open this window, hover over the button.</i></small></div>
+    <div><small><i>ボタン上でマウスホバーするとこのウィンドウが開きます。</i></small></div>
     <a href="#" class="js-mstdn-share-button-save mstdn-share-instance-save-button" type="button">Save and share</a>
   </form>
   </div>
