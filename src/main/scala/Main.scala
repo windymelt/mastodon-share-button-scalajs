@@ -1,14 +1,16 @@
 import org.scalajs.dom
-import org.scalajs.dom.document
-import concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import org.scalajs.dom.HTMLInputElement
+import org.scalajs.dom.Element
 import org.scalajs.dom.Event
 import org.scalajs.dom.HTMLAnchorElement
-import java.net.URI
-import org.scalajs.dom.Node
-import org.scalajs.dom.Element
 import org.scalajs.dom.HTMLFormElement
+import org.scalajs.dom.HTMLInputElement
+import org.scalajs.dom.Node
+import org.scalajs.dom.document
+
+import java.net.URI
+import scala.concurrent.Future
+
+import concurrent.ExecutionContext.Implicits.global
 
 val LOCAL_STORAGE_KEY_FOR_INSTANCE = "windymelt-mstdn-share-button-instance"
 var textTemplate = "{}"
@@ -58,7 +60,7 @@ val templateDOM = """
   }
 </style>
 <div class="js-mstdn-share-button-container">
-  <a href="#" class="js-mstdn-share mstdn-share-button">
+  <a href="#" tabindex="-1" class="js-mstdn-share mstdn-share-button">
     <img class="mstdn-share-button-logo" src="https://raw.githubusercontent.com/windymelt/mastodon-share-button-scalajs/main/logo-white.svg" alt="Mastodon">
     <span class="js-mstdn-share-button-text mstdn-share-button-text">Share</span>
   </a>
@@ -100,23 +102,25 @@ def registerEvents(): Unit =
       .querySelector(".js-mstdn-instance-origin")
       .asInstanceOf[HTMLInputElement]
 
+    val shareButton: HTMLAnchorElement =
+      e.querySelector(".js-mstdn-share").asInstanceOf[HTMLAnchorElement]
+
     instanceSaveButton.addEventListener(
       "click",
       (ev) => {
         resolveAndSetAsDefaultInstanceHost(instanceInput.value).andThen(_ =>
+          enableAnchor(shareButton)
           shareToDefaultInstance()
         )
       }
     )
-
-    val shareButton: HTMLAnchorElement =
-      e.querySelector(".js-mstdn-share").asInstanceOf[HTMLAnchorElement]
 
     defaultInstance match
       case None => // nop
       case Some(value) =>
         shareButton.href = shareUrl(value, shareText)
         shareButton.target = "_blank"
+        enableAnchor(shareButton)
 
     shareButton.addEventListener(
       "mouseover",
@@ -135,6 +139,7 @@ def registerEvents(): Unit =
 
     e.querySelector("form").asInstanceOf[HTMLFormElement].onsubmit = ev => {
       resolveAndSetAsDefaultInstanceHost(instanceInput.value).andThen(_ =>
+        enableAnchor(shareButton)
         shareToDefaultInstance()
       )
       ev.stopPropagation()
@@ -160,6 +165,9 @@ def shareToDefaultInstance(): Unit =
         shareUrl(value, shareText),
         "_blank"
       )
+
+def enableAnchor(e: HTMLAnchorElement): Unit =
+  e.attributes.removeNamedItem("tabindex")
 
 def defaultInstance: Option[String] =
   dom.window.localStorage.hasOwnProperty(LOCAL_STORAGE_KEY_FOR_INSTANCE) match
