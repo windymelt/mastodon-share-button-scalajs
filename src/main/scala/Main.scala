@@ -116,7 +116,13 @@ def registerEvents(): Unit =
     )
 
     defaultInstance match
-      case None => // nop
+      case None => // We can do nothing. We show configuration box
+        shareButton.addEventListener(
+          "click",
+          (_) =>
+            val popup = document.querySelectorAll(".js-mstdn-share-popup")
+            popup.foreach(_.classList.remove("hidden"))
+        )
       case Some(value) =>
         shareButton.href = shareUrl(value, shareText)
         shareButton.target = "_blank"
