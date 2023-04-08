@@ -174,8 +174,9 @@ def shareToDefaultInstance(): Unit =
         "_blank"
       )
 
-def enableAnchor(e: HTMLAnchorElement): Unit =
+def enableAnchor(e: HTMLAnchorElement): Unit = try {
   e.attributes.removeNamedItem("tabindex")
+} catch { case _: Exception => }
 
 def defaultInstance: Option[String] =
   dom.window.localStorage.hasOwnProperty(LOCAL_STORAGE_KEY_FOR_INSTANCE) match
