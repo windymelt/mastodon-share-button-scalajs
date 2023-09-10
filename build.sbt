@@ -9,7 +9,8 @@ lazy val root = project
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "2.1.0",
-      "com.softwaremill.sttp.client3" %%% "core" % "3.8.8"
+      "com.softwaremill.sttp.client3" %%% "core" % "3.8.8",
+      "com.raquo" %%% "laminar" % "16.0.0"
     ),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-scalajs",

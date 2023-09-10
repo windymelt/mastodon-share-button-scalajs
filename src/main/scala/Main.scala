@@ -6,6 +6,7 @@ import org.scalajs.dom.HTMLFormElement
 import org.scalajs.dom.HTMLInputElement
 import org.scalajs.dom.Node
 import org.scalajs.dom.document
+import com.raquo.laminar.api.L.{*, given}
 
 import java.net.URI
 import scala.concurrent.Future
