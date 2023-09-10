@@ -1,3 +1,5 @@
+import org.scalajs.linker.interface.ModuleSplitStyle
+
 val scala3Version = "3.3.0"
 val circeVersion = "0.14.1"
 
@@ -16,7 +18,13 @@ lazy val root = project
       "io.circe" %%% "circe-scalajs",
       "io.circe" %%% "circe-parser"
     ).map(_ % circeVersion),
-    libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test
+    libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.ESModule)
+        .withModuleSplitStyle(
+          ModuleSplitStyle.FewestModules
+        )
+    }
   )
   .enablePlugins(ScalaJSPlugin)
 
