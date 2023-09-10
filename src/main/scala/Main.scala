@@ -172,13 +172,15 @@ def modalBox: HtmlElement = {
         onClick --> saveAndShareHandler,
         "Save and Share"
       ),
-      onClick --> modalBoxClickHandler
+      onClick --> modalBoxClickHandler,
+      onSubmit --> { ev =>
+        ev.preventDefault(); ev.stopPropagation()
+      }
     )
   )
 }
 
 val saveAndShareHandler: Observer[dom.MouseEvent] = Observer { ev =>
-  println("pressed saveAndShare!")
   resolveAndSetAsDefaultInstanceHost(currentOriginStream.now()).andThen { _ =>
     if (!originVar.now().isEmpty()) {
       dom.window.open(
