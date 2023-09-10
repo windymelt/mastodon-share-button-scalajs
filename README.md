@@ -10,7 +10,7 @@ Paste this code into your HTML:
 
 ```html
 <a href="#" class="js-mstdn-share-button"></a>
-<script defer src="https://github.com/windymelt/mastodon-share-button-scalajs/releases/download/v0.0.6/mstdn-share.js"></script>
+<script defer src="https://github.com/windymelt/mastodon-share-button-scalajs/releases/latest/download/mstdn-share.js"></script>
 ```
 
 Latest version is ![](https://img.shields.io/github/v/release/windymelt/mastodon-share-button-scalajs?display_name=tag)
@@ -29,6 +29,12 @@ Currently following placeholders are available:
 - `{title}` -- for inner text of `title` element
 
 ### Build
+
+Use `vite dev` while `sbt '~fastLinkJS'` to start dev server.
+
+Run `npm run build` for release build.
+
+----
 
 Use `sbt fastLinkJS` for development build.
 
