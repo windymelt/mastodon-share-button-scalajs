@@ -1,3 +1,5 @@
+package io.github.windymelt.mstdnshare
+
 import org.scalajs.dom
 import org.scalajs.dom.Element
 import org.scalajs.dom.Event
@@ -14,11 +16,8 @@ import scala.concurrent.Future
 import concurrent.ExecutionContext.Implicits.global
 
 val LOCAL_STORAGE_KEY_FOR_INSTANCE = "windymelt-mstdn-share-button-instance"
-var textTemplate = "{}"
-var hovering = false
 
-val templateDOM = """
-<style>
+val styleString = """
   a.mstdn-share-button {
     border-radius: 3px;
     background-color: #6364FF;
@@ -45,7 +44,19 @@ val templateDOM = """
     padding: 10px;
     margin: 10px;
     position: fixed;
-    bottom: 10em;
+    margin-top: 30%;
+    margin-bottom: 30%;
+    margin-left: 30%;
+    margin-right: 30%;
+  }
+  .mstdn-share-popup-screen {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(50, 47, 45, 0.9);
+    top: 0;
+    left: 0;
+    transition: opacity .2s ease-out;
   }
   .mstdn-share-instance-save-button {
     border-radius: 5px;
@@ -62,133 +73,155 @@ val templateDOM = """
     color: black;
   }
   .hidden {
-    display: none;
+    opacity: 0;
+    pointer-events: none;
   }
-</style>
-<div class="js-mstdn-share-button-container">
-  <a href="#" tabindex="-1" class="js-mstdn-share mstdn-share-button">
-    <img class="mstdn-share-button-logo" src="https://raw.githubusercontent.com/windymelt/mastodon-share-button-scalajs/main/logo-white.svg" alt="Mastodon">
-    <span class="js-mstdn-share-button-text mstdn-share-button-text">Share</span>
-  </a>
-  <div class="js-mstdn-share-popup mstdn-share-popup hidden">
-    <form>
-    <label for="mstdn-instance-origin">Mastodon ID?</label>
-    <!-- https://github.com/mastodon/mastodon/blob/69378eac99c013a0db7d2d5ff9a54dfcc287d9ce/app/models/account.rb#L64 -->
-    <input class="js-mstdn-instance-origin" name="mstdn-instance-origin" type="text" size="30" pattern="@[a-z0-9_]+([a-z0-9_\.-]+[a-z0-9_]+)?@.*" value="" placeholder="@username@pawoo.net" />
-    <div><small><i>To open this window, hover over the button.</i></small></div>
-    <div><small><i>ボタン上でマウスホバーするとこのウィンドウが開きます。</i></small></div>
-    <a href="#" class="js-mstdn-share-button-save mstdn-share-instance-save-button" type="button">Save and share</a>
-  </form>
-  </div>
-</div>
 """
 
+val targetSelector: String = ".js-mstdn-share-button"
+
 @main def hello: Unit =
-  document.addEventListener("DOMContentLoaded", onLoad _)
+  lazy val buttonContainer =
+    dom.document.querySelector(targetSelector)
+  val buttonElement = shareButton
+  renderOnDomContentLoaded(buttonContainer, buttonElement)
 
-def replaceTagWithTemplate(): Unit =
-  val templateNode = document.createElement("TEMPLATE")
-  templateNode.innerHTML = templateDOM
-  templateNode.classList.add("js-mstdn-share-button-template")
-  document.body.appendChild(templateNode)
-  val template = document.querySelector(".js-mstdn-share-button-template")
-  val target = document.querySelectorAll(".js-mstdn-share-button")
-  target.foreach { elem =>
-    if (!elem.innerText.isEmpty()) {
-      textTemplate = elem.innerText
-    }
-    elem.outerHTML = template.innerHTML
+val hiddenVar: Var[Boolean] = Var(true)
+val originVar: Var[String] = Var(defaultInstanceString)
+val currentOriginStream: Var[String] = Var("")
+
+// State for waiting hover
+enum DelayState:
+  case Initial
+  case Waiting
+
+val delayStateVar: Var[DelayState] = Var(DelayState.Initial)
+val enterHandler: EventBus[dom.MouseEvent] = EventBus[dom.MouseEvent]()
+val enterTimeoutHandler = enterHandler.events.flatMap { _ =>
+  EventStream.fromValue((), emitOnce = true).delay(1000)
+}
+val textTemplateVar: Var[String] = Var("{}")
+
+def shareButton: HtmlElement = {
+  val originalContainer = dom.document.querySelector(targetSelector)
+  val originalContent = originalContainer.innerText
+  originalContainer.innerText = ""
+  if (!originalContent.isEmpty()) {
+    textTemplateVar.set(originalContent)
   }
 
-def registerEvents(): Unit =
-  val shareContainers =
-    document.querySelectorAll(".js-mstdn-share-button-container")
-
-  shareContainers.foreach { e =>
-    val instanceSaveButton = e.querySelector(".js-mstdn-share-button-save")
-    val instanceInput: HTMLInputElement = e
-      .querySelector(".js-mstdn-instance-origin")
-      .asInstanceOf[HTMLInputElement]
-
-    val shareButton: HTMLAnchorElement =
-      e.querySelector(".js-mstdn-share").asInstanceOf[HTMLAnchorElement]
-
-    instanceSaveButton.addEventListener(
-      "click",
-      (ev) => {
-        resolveAndSetAsDefaultInstanceHost(instanceInput.value).andThen(_ =>
-          enableAnchor(shareButton)
-          shareToDefaultInstance()
-        )
-      }
+  div(
+    styleTag(styleString),
+    a(
+      href := "#",
+      tabIndex := -1,
+      className := "mstdn-share-button",
+      img(
+        className := "mstdn-share-button-logo",
+        src := "https://raw.githubusercontent.com/windymelt/mastodon-share-button-scalajs/main/logo-white.svg",
+        alt := "Mastodon"
+      ),
+      span(
+        className := "mstdn-share-button-text",
+        "Share"
+      ),
+      onClick --> shareHandler,
+      onMouseEnter --> enterHandler,
+      onMouseLeave --> { _ => delayStateVar.set(DelayState.Initial) },
+      enterHandler --> { _ => delayStateVar.set(DelayState.Waiting) },
+      enterTimeoutHandler --> { _ =>
+        if (delayStateVar.now() == DelayState.Waiting) {
+          delayStateVar.set(DelayState.Initial)
+          hiddenVar.set(false)
+        }
+      },
+      modal
     )
+  )
+}
 
-    defaultInstance match
-      case None => // We can do nothing. We show configuration box
-        shareButton.addEventListener(
-          "click",
-          (_) =>
-            val popup = document.querySelectorAll(".js-mstdn-share-popup")
-            popup.foreach(_.classList.remove("hidden"))
-        )
-      case Some(value) =>
-        shareButton.href = shareUrl(value, shareText)
-        shareButton.target = "_blank"
-        enableAnchor(shareButton)
+def modal: HtmlElement = {
+  div(
+    className <-- hiddenVar.signal.map(isHidden =>
+      Option.when(isHidden)("hidden").toSeq ++ Seq("mstdn-share-popup-screen")
+    ),
+    onClick --> clickScreenHandler,
+    modalBox
+  )
+}
 
-    shareButton.addEventListener(
-      "mouseover",
-      _ => {
-        hovering = true
-        dom.window.setTimeout(
-          hoverTimeout(() => {
-            val popup = document.querySelectorAll(".js-mstdn-share-popup")
-            popup.foreach(_.classList.remove("hidden"))
-          }),
-          1000
-        )
-      }
+def modalBox: HtmlElement = {
+  div(
+    className := "mstdn-share-popup",
+    form(
+      label(forId := "mstdn-instance-origin", "Mastodon ID?"),
+      input(
+        idAttr := "mstdn-instance-origin",
+        `type` := "text",
+        size := 30,
+        value <-- currentOriginStream,
+        onChange.mapToValue --> currentOriginStream,
+        placeholder := "@username@pawoo.net"
+      ),
+      div(small(i("To open this window, hover over the button."))),
+      div(small(i("ボタン上でマウスホバーするとこのウィンドウが開きます。"))),
+      a(
+        href := "#",
+        className := "mstdn-share-instance-save-button",
+        `type` := "button",
+        onClick --> saveAndShareHandler,
+        "Save and Share"
+      ),
+      onClick --> modalBoxClickHandler
     )
-    shareButton.addEventListener("mouseleave", _ => hovering = false)
+  )
+}
 
-    e.querySelector("form").asInstanceOf[HTMLFormElement].onsubmit = ev => {
-      resolveAndSetAsDefaultInstanceHost(instanceInput.value).andThen(_ =>
-        enableAnchor(shareButton)
-        shareToDefaultInstance()
-      )
-      ev.stopPropagation()
-      false
-    }
-
-    e.classList.remove("js-mstdn-share-button-container")
-    e.classList.add("js-mstdn-share-button-container-extracted")
-  }
-
-def onLoad(ev: Event): Unit =
-  replaceTagWithTemplate()
-  registerEvents()
-
-def shareToDefaultInstance(): Unit =
-  val instanceOrigin = defaultInstance
-  val popup = document.querySelectorAll(".js-mstdn-share-popup")
-
-  instanceOrigin match
-    case None => popup.foreach(_.classList.remove("hidden"))
-    case Some(value) =>
+val saveAndShareHandler: Observer[dom.MouseEvent] = Observer { ev =>
+  println("pressed saveAndShare!")
+  resolveAndSetAsDefaultInstanceHost(currentOriginStream.now()).andThen { _ =>
+    if (!originVar.now().isEmpty()) {
       dom.window.open(
-        shareUrl(value, shareText),
+        shareUrl(originVar.now(), shareText),
         "_blank"
       )
+    }
+    ev.stopPropagation()
+    ev.preventDefault()
+  }
+}
 
-def enableAnchor(e: HTMLAnchorElement): Unit = try {
-  e.attributes.removeNamedItem("tabindex")
-} catch { case _: Exception => }
+val shareHandler: Observer[dom.MouseEvent] = Observer { ev =>
+  if (originVar.now().isEmpty) {
+    // no origin registered
+    hiddenVar.set(false)
+  } else {
+    // already origin registered
+    println("registered")
+    dom.window.open(
+      shareUrl(originVar.now(), shareText),
+      "_blank"
+    )
+    ev.stopPropagation()
+    ev.preventDefault()
+  }
+}
 
-def defaultInstance: Option[String] =
+val clickScreenHandler: Observer[dom.MouseEvent] = Observer { ev =>
+  hiddenVar.set(true)
+  ev.stopPropagation()
+  ev.preventDefault()
+}
+val modalBoxClickHandler: Observer[dom.MouseEvent] = Observer { ev =>
+  ev.stopPropagation()
+  ev.preventDefault()
+}
+
+def defaultInstanceString: String =
   dom.window.localStorage.hasOwnProperty(LOCAL_STORAGE_KEY_FOR_INSTANCE) match
     case true =>
-      Some(dom.window.localStorage.getItem(LOCAL_STORAGE_KEY_FOR_INSTANCE))
-    case false => None
+      dom.window.localStorage.getItem(LOCAL_STORAGE_KEY_FOR_INSTANCE)
+    case false => ""
 
 def resolveAndSetAsDefaultInstanceHost(userId: String): Future[Unit] =
   // webfinger
@@ -229,16 +262,16 @@ def resolveAndSetAsDefaultInstanceHost(userId: String): Future[Unit] =
 
 def setDefaultInstance(instance: String): Unit =
   dom.window.localStorage.setItem(LOCAL_STORAGE_KEY_FOR_INSTANCE, instance)
+  originVar.set(instance)
 
 def shareText: String =
   val title =
     Option(document.querySelector("head title")).map(_.innerText).getOrElse("")
-  textTemplate
-    .toString()
+  textTemplateVar
+    .now()
     .replaceAllLiterally("{}", dom.window.location.toString())
     .replaceAllLiterally("{title}", title)
 
 def shareUrl(origin: String, text: String): String =
   sttp.model.Uri(URI(s"$origin/share")).addParam("text", text).toString
 
-def hoverTimeout(f: () => Unit): () => Unit = () => if (hovering) f()
