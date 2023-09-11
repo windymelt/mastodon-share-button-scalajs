@@ -2,6 +2,7 @@
   "name": "mastodon-share-button",
   "version": "0.0.0",
   "type": "module",
+  "workspaces": ["./"],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
