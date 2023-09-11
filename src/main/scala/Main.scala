@@ -43,11 +43,13 @@ val styleString = """
     width: min-content;
     padding: 10px;
     margin: 10px;
-    position: fixed;
     margin-top: 30%;
     margin-bottom: 30%;
     margin-left: 30%;
     margin-right: 30%;
+    position: sticky;
+    top: 50%;
+    left: 50%;
   }
   .mstdn-share-popup-screen {
     position: fixed;
@@ -276,4 +278,3 @@ def shareText: String =
 
 def shareUrl(origin: String, text: String): String =
   sttp.model.Uri(URI(s"$origin/share")).addParam("text", text).toString
-
