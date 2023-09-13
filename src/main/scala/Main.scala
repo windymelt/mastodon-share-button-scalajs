@@ -227,6 +227,7 @@ def defaultInstanceString: String =
       dom.window.localStorage.getItem(LOCAL_STORAGE_KEY_FOR_INSTANCE)
     case false => ""
 
+private case class WebfingerResult(aliases: Seq[String])
 def resolveAndSetAsDefaultInstanceHost(userId: String): Future[Unit] =
   // webfinger
   import sttp.client3._
@@ -244,17 +245,16 @@ def resolveAndSetAsDefaultInstanceHost(userId: String): Future[Unit] =
   val backend = FetchBackend()
   val response = request.send(backend)
   response.map { res =>
-    import io.circe.syntax._
-    import io.circe.parser._
-    val parsedJson = res.body match
-      case Left(value)  => throw new Exception("body failure")
-      case Right(value) => parse(value)
 
-    val firstAlias = parsedJson match
-      case Left(value) => throw new Exception("JSON parsing failure")
-      case Right(value) =>
-        val aliases = (value \\ "aliases").head
-        aliases.asArray.flatMap(_.head.asString)
+    import com.github.plokhotnyuk.jsoniter_scala.macros._
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+
+    given codec: JsonValueCodec[WebfingerResult] = JsonCodecMaker.make
+
+    val webfingerResult =
+      res.body.right.toOption.map(readFromString[WebfingerResult](_))
+    println(webfingerResult)
+    val firstAlias: Option[String] = webfingerResult.map(_.aliases.head)
 
     firstAlias match
       case Some(s"$origin/@$user") =>
